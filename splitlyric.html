@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试歌词分割</title>
+    <style type="text/css">
+        textarea.part-lyric-class {width: 230px;height: 200px;}
+        textarea.top-class {width: 500px;height: 70px;}
+        h1.h-content-class {margin-top: 0px;margin-bottom: 0px;}
+        h6.h-content-class {margin-top: 0px;margin-bottom: 0px;}
+        textarea.all-lyric-class {width: 500px;height: 200px;}
+    </style>
+    <script src="../static/jquery-3.2.1.min.js"></script>
+</head>
+<body style="background: azure">
+描述：将完整歌词分段<br>
+使用说明：<br>
+&nbsp;&nbsp;&nbsp;&nbsp;方式一:输入歌曲名-->点击搜索-->自动获取歌词并分段<br>
+&nbsp;&nbsp;&nbsp;&nbsp;方式二:复制完整歌词-->粘贴到完整歌词文本框-->自动歌词分段
+
+<br><br>
+<strong style="color: aqua">方式一</strong><br>
+<strong>输入歌曲名，查询歌词</strong><br>
+<input type="text" id="songName">
+<input type="button" onclick="searchLyric()" value="搜索">
+<br><br><br>
+
+<strong style="color: aqua">方式二</strong><br>
+<strong>此处粘贴完整歌词</strong><br>
+<strong>可从酷狗音乐/其他-->歌词界面-->右键复制歌词到剪切板-->粘贴到此处</strong><br>
+<textarea id="all-lyric" class="all-lyric-class" onchange="splitLyric(this.value)">
+</textarea>
+
+<br>
+<br>
+<br>
+<h2 class="h-content-class">分割为120-140字长度的歌词</h2>
+<h5 class="h-content-class">点击下列文本框的文字即可完成复制操作-->粘贴到喜马拉雅的聊天框-->发送即可</h5>
+
+<textarea id="part0-lyric" class="part-lyric-class" onclick="selectCopy(this.id)">
+</textarea>
+<textarea id="part1-lyric" class="part-lyric-class" onclick="selectCopy(this.id)">
+</textarea>
+<textarea id="part2-lyric" class="part-lyric-class" onclick="selectCopy(this.id)">
+</textarea>
+<textarea id="part3-lyric" class="part-lyric-class" onclick="selectCopy(this.id)">
+</textarea>
+<textarea id="part4-lyric" class="part-lyric-class" onclick="selectCopy(this.id)">
+</textarea>
+<textarea id="part5-lyric" class="part-lyric-class" onclick="selectCopy(this.id)">
+</textarea>
+
+<script type="text/javascript">
+    function searchLyric() {
+        var songName=$("#songName").val();
+        var hashValue="";
+        var lyric="";
+        //设置请求为同步，这样只有获取到具体值之后才会往下走
+        $.ajaxSettings.async = false;
+
+        //根据关键字获取歌曲详情，获取id/hash为获取歌词做准备工作
+        //参数
+        // https://songsearch.kugou.com/song_search_v2?
+        // callback=jQuery112408939075958012923_1572572440706
+        // &keyword=%E7%B4%AB
+        // &page=1
+        // &pagesize=30
+        // &userid=-1
+        // &clientver=
+        // &platform=WebFilter
+        // &tag=em
+        // &filter=2
+        // &iscorrection=1
+        // &privilege_filter=0
+        // &_=1572572440714
+        //必须参数,keyword
+        //此处设置page/pagesize第一行第一个
+        $.getJSON("https://songsearch.kugou.com/song_search_v2?callback=?&keyword="+songName+"&page=1&pagesize=1&userid=-1&clientver=&platform=WebFilter&tag=em&filter=2&iscorrection=1&privilege_filter=0&_=1572572440714",{},function (data) {
+            // alert("test1,获取歌曲信息");
+            hashValue=data.data.lists[0].FileHash;
+            //根据参数获取歌词
+            // https://wwwapi.kugou.com/yy/index.php?r=play/getdata
+            // &callback=jQuery19105840815463513916_1572571499139
+            // &hash=28D98A4B8474AD3A357DCBDC823A7C84
+            // &album_id=2821275
+            // &dfid=2kuKXk0nXUsJ0XYs6X0KEc4w
+            // &mid=2bec21498cb6114b6265ba67dd5539bd
+            // &platid=4
+            // &_=1572571499140
+            //必须参数
+            //album_id,从上一个应答中解析，eg:2821275
+            // hash,从上一个请求的应答中解析,eg：28D98A4B8474AD3A357DCBDC823A7C84
+            //https://wwwapi.kugou.com/yy/index.php?r=play/getdata&callback=?&hash=28D98A4B8474AD3A357DCBDC823A7C84
+            $.getJSON("https://wwwapi.kugou.com/yy/index.php?r=play/getdata&callback=?&hash="+hashValue,{},function (data) {
+                // alert("test2，获取歌词");
+                lyric=data.data.lyrics;
+                var reg=/[\[0-9*:0-9*.0-9*\]]/g;
+                lyric=lyric.replace(reg,"");
+                //去除不需要的部分，歌词的前部分内容会包括﻿如下内容，不要要被解析
+                // id$
+                // ar薛之谦
+                // ti暧昧
+                // by
+                // hasheaedefcbcbadf
+                // al
+                // sign
+                // qq
+                // total
+                // offset
+                var offsetindex=lyric.indexOf("offset");
+                //+8 是因为offset\r\n
+                var tmp=lyric.substring(offsetindex+8);
+                //设置完整歌词框内容并触发方法
+                $("#all-lyric").val(tmp);
+                splitLyric(tmp);
+                // alert("testover");
+            });
+        });
+
+        //跨域搞到头疼（其实酷狗的服务端是支持跨域的，API接口错误而已），
+        //然后自己在网页版酷狗上找的API接口，还是自己找的好用，沃日
+
+        //下边是自己写的代理的访问，不用了
+        // $.ajax({
+        //     url:"/searchLyric?"+songName,
+        //     type:'GET',
+        //     success:function(data,state){
+        //         alert("test1");
+        //         alert(data);
+        //     },
+        //     error:function(data,state){
+        //         alert("test2");
+        //         alert(data);
+        //     }
+        // });
+        }
+
+    function splitLyric(lyric) {
+        //一句歌词最长不会超过20个字，所以先以\n来分句子，再句子累加，累加一次判断一次长度，以120-140字为界限
+        //累加之后在这个范围内时，就可以输出
+        //若为空则分歌词框为空
+        //若小于140字，则直接输出在分歌词第一个框
+        var tmp=lyric.split(/\n/g);
+        var len=lyric.length;
+        var time=len/140;
+        var lastTime=0;//记录上次累计到哪一行
+        var tag=0;//标记最后一次的歌词部分是否大于140字
+        if (len>0){
+            if(time>1){
+                for (var i=0;i<time;i++){
+                    var partLyric="";
+                    if((i+1)>time){
+                        //最后一次拼接时字数范围小于120，直接输出在下一个内容框
+                        for(var m=lastTime;m<tmp.length;m++){
+                            partLyric+=tmp[m]+"\n";
+                            if(partLyric.length>=140){
+                                lastTime+=m;
+                                document.getElementById("part"+i+"-lyric").innerHTML=partLyric;
+                                partLyric="";
+                                tag=1;
+                            }
+                        }
+                        if (tag==1){
+                            document.getElementById("part"+(i+1)+"-lyric").innerHTML=partLyric;
+                        }else {
+                            document.getElementById("part"+i+"-lyric").innerHTML=partLyric;
+                        }
+                    }else {
+                        //正常拼接时
+                        for(var m=0;m<tmp.length;m++){
+                            partLyric+=tmp[m+lastTime]+"\n";
+                            if(partLyric.length>=120 && partLyric.length<=140){
+                                lastTime+=m;
+                                document.getElementById("part"+i+"-lyric").innerHTML=partLyric;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }else {
+                document.getElementById("part"+0+"-lyric").innerHTML=lyric;
+                document.getElementById("part"+1+"-lyric").innerHTML="";
+                document.getElementById("part"+2+"-lyric").innerHTML="";
+                document.getElementById("part"+3+"-lyric").innerHTML="";
+                document.getElementById("part"+4+"-lyric").innerHTML="";
+                document.getElementById("part"+5+"-lyric").innerHTML="";
+            }
+        }else {
+            document.getElementById("part"+0+"-lyric").innerHTML="";
+            document.getElementById("part"+1+"-lyric").innerHTML="";
+            document.getElementById("part"+2+"-lyric").innerHTML="";
+            document.getElementById("part"+3+"-lyric").innerHTML="";
+            document.getElementById("part"+4+"-lyric").innerHTML="";
+            document.getElementById("part"+5+"-lyric").innerHTML="";
+        }
+    }
+
+    function selectCopy(id) {
+        var textArea=document.getElementById(id);
+        textArea.select(); // 选中
+        document.execCommand('copy',false); // copy已经选中的内容
+    }
+</script>
+</body>
+</html>

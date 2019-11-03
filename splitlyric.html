@@ -10,9 +10,11 @@
         h6.h-content-class {margin-top: 0px;margin-bottom: 0px;}
         textarea.all-lyric-class {width: 500px;height: 200px;}
     </style>
-    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<!--    <script src="../static/jquery-3.2.1.min.js"></script>-->
 </head>
 <body style="background: azure">
+<iframe src="http://www.kugou.com/" name="获取cookie" style="display: none"></iframe>
 描述：将完整歌词分段<br>
 使用说明：<br>
 &nbsp;&nbsp;&nbsp;&nbsp;方式一:输入歌曲名-->点击搜索-->自动获取歌词并分段<br>
@@ -93,7 +95,7 @@
             //https://wwwapi.kugou.com/yy/index.php?r=play/getdata&callback=?&hash=28D98A4B8474AD3A357DCBDC823A7C84
             $.getJSON("https://wwwapi.kugou.com/yy/index.php?r=play/getdata&callback=?&hash="+hashValue,{},function (data) {
                 // alert("test2，获取歌词");
-                lyric=data.data.lyrics;
+                lyric=data.data.lyrics.toString();
                 var reg=/[\[0-9*:0-9*.0-9*\]]/g;
                 lyric=lyric.replace(reg,"");
                 //去除不需要的部分，歌词的前部分内容会包括﻿如下内容，不要要被解析
@@ -119,8 +121,7 @@
 
         //跨域搞到头疼（其实酷狗的服务端是支持跨域的，API接口错误而已），
         //然后自己在网页版酷狗上找的API接口，还是自己找的好用，沃日
-
-        //下边是自己写的代理的访问，不用了
+        //下边是自己写的代理的访问，未使用到
         // $.ajax({
         //     url:"/searchLyric?"+songName,
         //     type:'GET',
@@ -133,7 +134,7 @@
         //         alert(data);
         //     }
         // });
-        }
+    }
 
     function splitLyric(lyric) {
         //一句歌词最长不会超过20个字，所以先以\n来分句子，再句子累加，累加一次判断一次长度，以120-140字为界限
@@ -169,7 +170,9 @@
                         //正常拼接时
                         for(var m=0;m<tmp.length;m++){
                             partLyric+=tmp[m+lastTime]+"\n";
-                            if(partLyric.length>=120 && partLyric.length<=140){
+                            // console.log(partLyric.length+":"+partLyric);
+                            if(partLyric.length>=110 && partLyric.length<=140){
+                                // alert(partLyric.length+":"+partLyric);
                                 lastTime+=m;
                                 document.getElementById("part"+i+"-lyric").innerHTML=partLyric;
                                 break;
